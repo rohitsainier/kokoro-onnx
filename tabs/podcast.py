@@ -1,6 +1,7 @@
 import gradio as gr
 import pandas as pd
 import numpy as np
+import scipy.signal as signal
 from kokoro_onnx import Kokoro
 
 def create_podcast(kokoro, available_voices, sentences):
@@ -34,15 +35,20 @@ def create_podcast(kokoro, available_voices, sentences):
                 lang="en-us"
             )
             sample_rate = sr
-            audio.append(samples)
             
-            # Add random pause between sentences
-            silence_duration = np.random.uniform(0.5, 2.0)
-            silence = np.zeros(int(silence_duration * sr))
+            # Convert mono to stereo by duplicating channel
+            stereo_samples = np.column_stack((samples, samples))
+            audio.append(stereo_samples)
+            
+            # Add random pause between sentences (also in stereo)
+            silence_duration = np.random.uniform(0.5, 1.0)
+            silence = np.zeros((int(silence_duration * sr), 2))
             audio.append(silence)
         
         # Concatenate all audio parts
         final_audio = np.concatenate(audio)
+        # Apply default Audacity EQ to enhance bass and treble
+        #final_audio = apply_audacity_eq(final_audio, sample_rate)
         return (sample_rate, final_audio)
     except Exception as e:
         print(f"Error creating podcast: {e}")
@@ -167,7 +173,7 @@ def create_podcast_tab(kokoro, available_voices, EXAMPLE_SENTENCES):
                     if ":" not in line:
                         raise gr.Error(f"Line {line_num}: Missing colon separator")
                     voice_part, _, text_part = line.partition(":")
-                    voice = voice_part.strip()
+                    voice = voice_part.strip().lower()
                     text = text_part.strip()
                     
                     if voice not in available_voices:
@@ -186,3 +192,47 @@ def create_podcast_tab(kokoro, available_voices, EXAMPLE_SENTENCES):
             inputs=[file_upload],
             outputs=[podcast_input],
         )
+
+def apply_audacity_eq(audio, sample_rate, bass_gain=6, treble_gain=6, bass_freq=100, treble_freq=4000):
+    """
+    Applies a shelving EQ similar to Audacity's default Bass & Treble settings.
+
+    Parameters:
+        audio (numpy array): 2D stereo audio (num_samples, 2) or mono (num_samples,).
+        sample_rate (int): Sample rate in Hz.
+        bass_gain (float): Gain in dB for bass frequencies (default: +6dB).
+        treble_gain (float): Gain in dB for treble frequencies (default: +6dB).
+        bass_freq (float): Center frequency for bass shelf (default: 100Hz).
+        treble_freq (float): Center frequency for treble shelf (default: 4000Hz).
+
+    Returns:
+        numpy array: Equalized audio with the same shape as input.
+    """
+    
+    def shelving_filter(gain_dB, cutoff_freq, sample_rate, filter_type='low'):
+        """
+        Creates a shelving filter (low or high) with given gain and cutoff frequency.
+        """
+        gain_linear = 10**(gain_dB / 20)  # Convert dB gain to linear
+        nyquist = sample_rate / 2  # Nyquist frequency
+        normalized_cutoff = cutoff_freq / nyquist  # Normalize cutoff frequency
+
+        if filter_type == 'low':  # Bass shelf
+            b, a = signal.iirfilter(1, Wn=normalized_cutoff, btype='low', ftype='butter')
+        else:  # Treble shelf
+            b, a = signal.iirfilter(1, Wn=normalized_cutoff, btype='high', ftype='butter')
+
+        return b, a
+
+    # Convert gain from dB to linear scale
+    if bass_gain != 0:
+        bass_b, bass_a = shelving_filter(bass_gain, bass_freq, sample_rate, 'low')
+        audio = signal.lfilter(bass_b, bass_a, audio, axis=0)
+
+    if treble_gain != 0:
+        treble_b, treble_a = shelving_filter(treble_gain, treble_freq, sample_rate, 'high')
+        audio = signal.lfilter(treble_b, treble_a, audio, axis=0)
+
+    return audio.astype(np.float32)
+
+
