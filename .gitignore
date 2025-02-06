@@ -24,3 +24,7 @@ espeak-ng-data/
 
 # Virtual environments
 .venv
+
+# models
+kokoro-v1.0
+voices-v1.0

@@ -1,0 +1,8 @@
+kokoro-onnx
+gradio 
+wget
+soundfile
+ollama
+requests
+whisper-openai
+pyaudio
