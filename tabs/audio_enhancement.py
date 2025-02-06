@@ -3,6 +3,47 @@ import gradio as gr
 import tempfile
 from utils.utils import process_audio_enhancement
 
+# Imports for generating spectrograms
+import matplotlib.pyplot as plt
+import librosa
+import librosa.display
+import numpy as np
+
+def preview_input_audio(input_file):
+    # A simple callback function to enable previewing the uploaded audio file.
+    # It returns the file path that the gr.Audio component can use to play the audio.
+    return input_file
+
+def generate_spectrogram(audio_file_path):
+    """
+    Generate a spectrogram image from an audio file.
+    Returns the file path to the spectrogram image.
+    """
+    try:
+        # Load audio with original sampling rate
+        y, sr = librosa.load(audio_file_path, sr=None)
+    except Exception as e:
+        raise gr.Error(f"Error loading audio file for spectrogram: {str(e)}")
+    
+    # Generate mel spectrogram and convert to decibels.
+    S = librosa.feature.melspectrogram(y=y, sr=sr)
+    S_dB = librosa.power_to_db(S, ref=np.max)
+    
+    # Create the plot
+    plt.figure(figsize=(10, 4))
+    librosa.display.specshow(S_dB, sr=sr, x_axis='time', y_axis='mel')
+    plt.title('Mel-frequency spectrogram')
+    plt.colorbar(format='%+2.0f dB')
+    plt.tight_layout()
+    
+    # Save the spectrogram image to a temporary file.
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+        output_img = tmpfile.name
+    plt.savefig(output_img)
+    plt.close()
+    
+    return output_img
+
 def enhance_audio(
     input_file,
     sample_rate,
@@ -45,7 +86,12 @@ def enhance_audio(
     except Exception as e:
         raise gr.Error(f"Error processing audio: {str(e)}")
     
-    return output_file
+    # Generate spectrograms for both input and enhanced audio files.
+    input_spectrogram = generate_spectrogram(input_file)
+    output_spectrogram = generate_spectrogram(output_file)
+    
+    # Return tuple: enhanced audio file, input spectrogram image, output spectrogram image.
+    return output_file, input_spectrogram, output_spectrogram
 
 def create_audio_enhancement_tab():
     with gr.Tab("Audio Enhancement"):
@@ -54,12 +100,16 @@ def create_audio_enhancement_tab():
             ### Enhance Your Audio File
             
             Upload an audio file and adjust the parameters to reduce noise, compress, and apply shelf filtering.
+            You can also compare the spectrogram of your input audio with that of the enhanced output.
             """
         )
         with gr.Row():
+            # Left column: input controls
             with gr.Column():
-                # File input: expect file path
                 file_input = gr.File(label="Upload Audio File", type="filepath", file_types=[".wav", ".mp3", ".aiff"])
+                audio_input_preview = gr.Audio(label="Input Audio Preview", type="filepath")
+                file_input.change(fn=preview_input_audio, inputs=file_input, outputs=audio_input_preview)
+
                 sample_rate_input = gr.Slider(
                     minimum=8000, maximum=48000, step=1000, value=44100, label="Sample Rate"
                 )
@@ -93,9 +143,15 @@ def create_audio_enhancement_tab():
                     minimum=0, maximum=20, step=1, value=10, label="Output Gain (dB)"
                 )
                 enhance_btn = gr.Button("Enhance Audio", variant="primary")
+            
+            # Right column: output components (enhanced audio at top, spectrograms below)
             with gr.Column():
                 audio_output = gr.Audio(label="Enhanced Audio", type="filepath")
+                with gr.Row():
+                    spectrogram_input_image = gr.Image(label="Input Audio Spectrogram", type="filepath")
+                    spectrogram_output_image = gr.Image(label="Enhanced Audio Spectrogram", type="filepath")
         
+        # Connect all inputs to the enhancement function
         enhance_btn.click(
             fn=enhance_audio,
             inputs=[
@@ -113,5 +169,5 @@ def create_audio_enhancement_tab():
                 low_shelf_gain_input,
                 output_gain_input,
             ],
-            outputs=audio_output,
+            outputs=[audio_output, spectrogram_input_image, spectrogram_output_image],
         ) 
