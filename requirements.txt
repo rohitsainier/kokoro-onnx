@@ -6,3 +6,5 @@ ollama
 requests
 whisper-openai
 pyaudio
+noisereduce
+pedalboard

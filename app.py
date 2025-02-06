@@ -16,7 +16,8 @@ from tabs import (
     create_single_voice_tab,
     create_podcast_tab,
     create_audiobook_tab,
-    create_playground_tab
+    create_playground_tab,
+    create_audio_enhancement_tab
 )
 
 # Constants
@@ -69,20 +70,22 @@ def create_ui():
             create_podcast_tab(kokoro, available_voices, EXAMPLE_SENTENCES)
             create_audiobook_tab(kokoro, available_voices, available_languages)
             create_playground_tab(kokoro, available_voices, available_languages)
+            create_audio_enhancement_tab()
         
         gr.Markdown("""
         ### Usage Instructions:
-        1. Select a tab based on your needs:
-           - Single Voice: Convert simple text to speech
-           - Podcast: Create multi-speaker conversations
-           - Audiobook: Convert longer texts with paragraph support
-           - Playground: Experiment with various voice settings
+        1. **Select a Tab:** Choose the tab that fits your needs:
+           - **Single Voice:** Convert simple text to speech with customizable voice, language, and speed.
+           - **Podcast:** Create engaging multi-speaker conversations by adding individual lines for different voices.
+           - **Audiobook:** Generate an audiobook from a text file. The system automatically splits paragraphs and adds pauses.
+           - **Playground:** Experiment with AI-driven text-to-speech. Use your microphone to transcribe your speech, generate an AI response, and synthesize the result (make sure your local Ollama server is running).
+           - **Audio Enhancement:** Upload an audio file and apply noise reduction, compression, and EQ adjustments to enhance the audio quality.
         
-        2. Enter your text and adjust the settings
-        3. Click the generate button to create speech
-        4. Use the audio player to listen to the result
+        2. **Input & Adjust Settings:** Enter your text or select/upload your audio file, choose the desired voice, and adjust the settings as needed.
+        3. **Generate Output:** Click the generate button to synthesize or process your audio.
+        4. **Preview & Download:** Listen to the resulting audio using the built-in audio player and download if desired.
         
-        Note: Processing time may vary based on text length and system capabilities.
+        **Note:** Processing times may vary based on the text length, audio file size, and system configurations.
         """)
     
     return interface
