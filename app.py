@@ -62,8 +62,8 @@ def create_ui():
     available_languages = kokoro.get_languages()
     
     # Create the Gradio interface
-    with gr.Blocks(title="Kokoro TTS") as interface:
-        gr.Markdown("# Kokoro Text-to-Speech")
+    with gr.Blocks(title="ॐ") as interface:
+        gr.Markdown("ॐ Text-to-Speech")
         
         with gr.Tabs():
             create_single_voice_tab(kokoro, available_voices, available_languages)

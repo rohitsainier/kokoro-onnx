@@ -148,8 +148,9 @@ def create_audio_enhancement_tab():
             with gr.Column():
                 audio_output = gr.Audio(label="Enhanced Audio", type="filepath")
                 with gr.Row():
-                    spectrogram_input_image = gr.Image(label="Input Audio Spectrogram", type="filepath")
-                    spectrogram_output_image = gr.Image(label="Enhanced Audio Spectrogram", type="filepath")
+                    with gr.Column():
+                        spectrogram_input_image = gr.Image(label="Input Audio Spectrogram", type="filepath")
+                        spectrogram_output_image = gr.Image(label="Enhanced Audio Spectrogram", type="filepath")
         
         # Connect all inputs to the enhancement function
         enhance_btn.click(
