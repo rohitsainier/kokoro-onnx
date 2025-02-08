@@ -83,8 +83,9 @@ def add_subtitles_to_video(
                     color=validate_color(color),
                     stroke_color=validate_color(stroke_color),
                     stroke_width=stroke_width,
+                    text_align="center",
                     method="caption",
-                    size=(int(video.w * 0.8), None),
+                    size=(int(video.w * 0.8), int(video.h * 0.3)),
                 )
                 .with_position(("center", "bottom"))
                 .with_duration(duration)
@@ -98,6 +99,8 @@ def add_subtitles_to_video(
         output_path = (
             "output_" + os.path.splitext(os.path.basename(video_path))[0] + ".mp4"
         )
+        # Match the input video duration with output path video (CompositeVideoClip)
+        final_video.duration = video.duration  # Ensure duration matches source video
 
         final_video.write_videofile(
             output_path,
